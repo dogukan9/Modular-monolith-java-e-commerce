@@ -1,11 +1,8 @@
 package com.shopwise.user.api;
 
-
 import com.shopwise.shared.api.ApiResponse;
 import com.shopwise.user.application.UserService;
-import com.shopwise.user.application.dto.CreateUserRequest;
-import com.shopwise.user.application.dto.UpdateUserRequest;
-import com.shopwise.user.application.dto.UserResponse;
+import com.shopwise.user.application.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,11 +42,11 @@ public class UserController {
 
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
-
-        List<UserResponse> response = userService.getAllUsers();
+    public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> getUsers(
+            @ModelAttribute UserFilterRequest filter) {
+        PageResponse<UserResponse> response = userService.getUsers(filter);
         return ResponseEntity.ok(ApiResponse.success(response,
-                response.size() + " kullanıcı getirildi"));
+                response.getTotalElements() + " kullanıcı bulundu"));
     }
 
     @PutMapping("/{id}")

@@ -1,12 +1,17 @@
 package com.shopwise.user.application;
 
 import com.shopwise.shared.exception.BusinessException;
-import com.shopwise.user.application.dto.CreateUserRequest;
-import com.shopwise.user.application.dto.UpdateUserRequest;
-import com.shopwise.user.application.dto.UserResponse;
+import com.shopwise.user.application.dto.*;
 import com.shopwise.user.domain.User;
 import com.shopwise.user.infrastructure.UserRepository;
+import com.shopwise.user.infrastructure.UserSpecification;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +21,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -45,11 +51,23 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(userMapper::toResponse)
-                .toList();
+    public PageResponse<UserResponse> getUsers(UserFilterRequest filter) {
+        Sort.Direction direction = filter.getSortDir().equalsIgnoreCase("asc")
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+
+        Pageable pageable = PageRequest.of(
+                filter.getPage(),
+                filter.getSize(),
+                Sort.by(direction, filter.getSortBy())
+        );
+
+        Specification<User> spec = UserSpecification.build(filter);
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+
+        Page<UserResponse> responsePage = userPage.map(userMapper::toResponse);
+        return PageResponse.of(responsePage);
     }
 
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
