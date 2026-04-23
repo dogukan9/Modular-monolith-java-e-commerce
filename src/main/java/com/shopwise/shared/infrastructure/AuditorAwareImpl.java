@@ -1,9 +1,9 @@
 package com.shopwise.shared.infrastructure;
 
+import com.shopwise.user.application.CustomUserDetails;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -13,8 +13,7 @@ public class AuditorAwareImpl implements AuditorAware<Long> {
     @Override
     public Optional<Long> getCurrentAuditor() {
         Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
+                .getContext().getAuthentication();
 
         if (authentication == null
                 || !authentication.isAuthenticated()
@@ -22,7 +21,8 @@ public class AuditorAwareImpl implements AuditorAware<Long> {
             return Optional.of(0L);
         }
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return Optional.of(0L); //  JWT adımında tamamlanacak
+        CustomUserDetails userDetails =
+                (CustomUserDetails) authentication.getPrincipal();
+        return Optional.of(userDetails.getUserId());
     }
 }

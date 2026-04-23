@@ -1,6 +1,7 @@
 package com.shopwise.user.api;
 
 import com.shopwise.shared.api.ApiResponse;
+import com.shopwise.shared.api.PageResponse;
 import com.shopwise.user.application.UserService;
 import com.shopwise.user.application.dto.*;
 import jakarta.validation.Valid;
@@ -10,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -19,17 +18,6 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-
-    @PostMapping
-    public ResponseEntity<ApiResponse<UserResponse>> createUser(
-            @RequestBody @Valid CreateUserRequest request) {
-
-        log.info("Create user request: {}", request.email());
-        UserResponse response = userService.createUser(request);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response, "Kullanıcı başarıyla oluşturuldu"));
-    }
 
 
     @GetMapping("/{id}")

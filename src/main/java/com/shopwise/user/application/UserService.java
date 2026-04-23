@@ -1,22 +1,30 @@
 package com.shopwise.user.application;
 
+import com.shopwise.shared.api.PageResponse;
+import com.shopwise.shared.dto.AuditUserInfo;
 import com.shopwise.shared.exception.BusinessException;
+import com.shopwise.shared.port.UserLookupPort;
 import com.shopwise.user.application.dto.*;
 import com.shopwise.user.domain.User;
+import com.shopwise.user.domain.event.UserDeactivatedEvent;
 import com.shopwise.user.infrastructure.UserRepository;
 import com.shopwise.user.infrastructure.UserSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -26,28 +34,18 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
+    private final UserLookupPort userLookupPort;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public UserResponse createUser(CreateUserRequest request) {
-
-         if (userRepository.existsByEmail(request.email())) {
-            throw new BusinessException("EMAIL_ALREADY_EXISTS",
-                    "Bu email zaten kullanılıyor: " + request.email());
-        }
-
-        String hashedPassword = passwordEncoder.encode(request.password());
-
-        User user = User.create(request.email(), hashedPassword, request.fullName());
-
-        User savedUser = userRepository.save(user);
-
-        return userMapper.toResponse(savedUser);
-    }
 
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
         User user = findUserById(id);
-        return userMapper.toResponse(user);
+        AuditUserInfo createdBy = userLookupPort
+                .findAuditInfo(user.getCreatedBy()).orElse(null);
+        AuditUserInfo updatedBy = userLookupPort
+                .findAuditInfo(user.getUpdatedBy()).orElse(null);
+        return userMapper.toResponse(user, createdBy, updatedBy);
     }
 
     @Transactional(readOnly = true)
@@ -65,21 +63,39 @@ public class UserService {
 
         Specification<User> spec = UserSpecification.build(filter);
         Page<User> userPage = userRepository.findAll(spec, pageable);
+        Set<Long> userIds = userPage.getContent().stream()
+                .flatMap(u -> Stream.of(u.getCreatedBy(), u.getUpdatedBy()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-        Page<UserResponse> responsePage = userPage.map(userMapper::toResponse);
+        Map<Long, AuditUserInfo> auditUsers =
+                userLookupPort.findAuditInfoByIds(userIds);
+
+        Page<UserResponse> responsePage = userPage.map(user ->
+                userMapper.toResponse(user,
+                        auditUsers.get(user.getCreatedBy()),
+                        auditUsers.get(user.getUpdatedBy()))
+        );
         return PageResponse.of(responsePage);
     }
 
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
         User user = findUserById(id);
         user.updateFullName(request.fullName());
-        return userMapper.toResponse(userRepository.save(user));
+
+        AuditUserInfo createdBy = userLookupPort
+                .findAuditInfo(user.getCreatedBy()).orElse(null);
+        AuditUserInfo updatedBy = userLookupPort
+                .findAuditInfo(user.getUpdatedBy()).orElse(null);
+        return userMapper.toResponse(userRepository.save(user), createdBy, updatedBy);
     }
 
     public void deactivateUser(Long id) {
         User user = findUserById(id);
         user.deactivate();
         userRepository.save(user);
+        eventPublisher.publishEvent(new UserDeactivatedEvent(id));
+        log.info("User deactivated event published: {}", id);
     }
 
     private User findUserById(Long id) {

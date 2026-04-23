@@ -1,4 +1,4 @@
-package com.shopwise.user.application.dto;
+package com.shopwise.shared.api;
 
 import lombok.Builder;
 import lombok.Getter;
