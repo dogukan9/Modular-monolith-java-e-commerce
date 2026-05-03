@@ -7,6 +7,8 @@ import com.shopwise.product.application.dto.ProductResponse;
 import com.shopwise.product.application.dto.UpdateProductRequest;
 import com.shopwise.shared.api.ApiResponse;
 import com.shopwise.shared.api.PageResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Product", description = "Ürün yönetimi")
+@SecurityRequirement(name = "Bearer Authentication")
 public class ProductController {
 
     private final ProductService productService;

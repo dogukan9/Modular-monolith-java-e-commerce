@@ -2,6 +2,7 @@ package com.shopwise.shared.config;
 
 import com.shopwise.shared.security.JwtAuthFilter;
 import com.shopwise.user.application.CustomUserDetailsService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,7 +39,39 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Bu endpoint'ler herkese açık
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/api-docs/**",
+                                "/api-docs.yaml"
+                        ).permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            // Token yok veya geçersiz → 401
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("""
+                                {
+                                    "success": false,
+                                    "errorCode": "UNAUTHORIZED",
+                                    "message": "Token gerekli veya geçersiz"
+                                }
+                                """);
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            // Token geçerli ama yetki yok → 403
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.getWriter().write("""
+                                {
+                                    "success": false,
+                                    "errorCode": "FORBIDDEN",
+                                    "message": "Bu işlem için yetkiniz yok"
+                                }
+                                """);
+                        })
                 )
                 .addFilterBefore(jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class);

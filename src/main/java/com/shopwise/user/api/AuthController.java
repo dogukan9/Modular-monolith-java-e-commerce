@@ -6,6 +6,7 @@ import com.shopwise.user.application.dto.CreateUserRequest;
 import com.shopwise.user.application.dto.LoginRequest;
 import com.shopwise.user.application.dto.LoginResponse;
 import com.shopwise.user.application.dto.UserResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Kimlik doğrulama işlemleri")
 public class AuthController {
 
     private final AuthService authService;
