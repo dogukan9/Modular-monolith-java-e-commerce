@@ -1,6 +1,6 @@
-#  Shopwise — Modüler Monolith E-Ticaret API
+# Fake Shopwise — Modüler Monolith E-Ticaret API
 
-Shopwise, Spring Boot ile geliştirilmiş, gerçek dünya projelerinde kullanılan mimari pattern'leri içeren bir **Modüler Monolith** e-ticaret API'sidir.
+Bu proje, Spring Boot ile geliştirilmiş, gerçek dünya projelerinde kullanılan mimari pattern'leri içeren bir **Modüler Monolith** e-ticaret API'sidir.
 
 ---
 
